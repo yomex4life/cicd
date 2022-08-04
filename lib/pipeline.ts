@@ -1,16 +1,15 @@
 import { Construct } from "constructs";
 import { Pipeline, Artifact } from "aws-cdk-lib/aws-codepipeline";
-import { GitHubSourceAction, CodeBuildAction } from "aws-cdk-lib/aws-codepipeline-actions";
-import { SecretValue, Stack } from "aws-cdk-lib";
+import { GitHubSourceAction, CodeBuildAction, CloudFormationCreateUpdateStackAction } from "aws-cdk-lib/aws-codepipeline-actions";
+import { SecretValue, Stack, StackProps } from "aws-cdk-lib";
 import { PipelineProject, LinuxBuildImage, BuildSpec } from "aws-cdk-lib/aws-codebuild";// import * as sqs from 'aws-cdk-lib/aws-sqs';
 
 
 export class cicdPipeline extends Stack{
-
-
-    constructor(scope: Construct, id: string) {
-        super(scope, id);
-
+    constructor(scope: Construct, id: string, props?: StackProps) {
+        super(scope, id, props);
+    
+    
         const pipeline = new Pipeline(this, 'Pipeline', {
             pipelineName: 'pipeline',
             crossAccountKeys: false
@@ -49,5 +48,17 @@ export class cicdPipeline extends Stack{
             })
             })]
         });
+
+        pipeline.addStage({
+            stageName: 'Pipeline_Update',
+            actions: [
+                new CloudFormationCreateUpdateStackAction({
+                    actionName: 'Pipeline_Update',
+                    stackName: 'PipelineStack',
+                    templatePath: cdkBuildOutput.atPath('PipelineStack.template.json'),
+                    adminPermissions: true
+                })
+            ]
+        })
     }
 }
